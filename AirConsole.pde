@@ -1,21 +1,33 @@
+/*
+// @lhsbikeshed compressed air controller
+ //
+ // Q = quit
+ // 1 - 8 = toggle relays on and off
+ // 
+ // Indicator lights show what state each channel is in, according to the arduino.
+ //
+ // COM port is currently hardcoded because effort. Change the line in setup()
+ //
+ */
 
 import processing.serial.*;
+
 Serial myPort;
-int[] serialCommand;
-int[] serialStatus;
+PImage logo;
+
+String serialCommand = "";
+String serialStatus = "";
 boolean commandUpdate = false;
 boolean statusUpdate = false;
-PImage logo;
 
 int red = #FF0009;
 int green = #03FF00;
 int grey = #B7B7B7;
-
-int indicatorX = 50; //X pos
-int indicatorY = 20; //Y pos
-int indicatorW = 25; //Width
-int indicatorH = 25; //Height
-int indicatorO = 30; //Offset
+int indicatorX = 55;
+int indicatorY = 25;
+int indicatorW = 25;
+int indicatorH = 25;
+int indicatorO = 30;
 int[] indicatorC = { 
   grey, grey, grey, grey, grey, grey, grey, grey,
 };
@@ -24,30 +36,37 @@ void setup() {
   size(320, 240, P2D);
   background(0);
   logo = loadImage("logo.png");
-  println(Serial.list());
-  myPort = new Serial(this, "COM11", 115200); //TODO: Dropdown for selecting comport.
+  myPort = new Serial(this, "COM5", 115200);
   myPort.bufferUntil('\n');
 }
 
-void draw() {  
+void draw() {   
   int i = 0;
 
-  //Check if we have a new status and update the indicators
   if (statusUpdate) {
-    //TODO    
-    statusUpdate = false; //We've dealt with this update.
+    while (i<8) {
+      switch(serialStatus.charAt(i))
+      {
+      case '1': 
+        indicatorC[i] = green;
+        break;        
+      case '0':       
+        indicatorC[i] = red;
+        break;
+      }
+      i++;
+    }    
+    statusUpdate = false;
   }
 
-  //Check if we have a new command and push it out
   if (commandUpdate) {
-    //TODO
-    commandUpdate = false; //We've dealt with this update.
+    //TODO: serialCommand has been changed by numkeys, push it out to serial.
+    commandUpdate = false;
   }
 
-  //Draw the background
   image(logo, 0, 0);
 
-  //Draw the indicators
+  i = 0;
   while (i<8) {
     fill(indicatorC[i]);
     ellipse(indicatorX+indicatorO*i, indicatorY, indicatorW, indicatorH);
@@ -56,37 +75,17 @@ void draw() {
 }
 
 void keyPressed() {
-  if (key == 't') {
-    int c = 0;
-    int a = 0; 
-    int n = 0;
-
-    c = (int)random(0.0, 2.0);
-    a = (int)random(0.0, 8.0);
-
-    if (c == 0) { 
-      n = green;
-    } 
-    else if (c == 1) { 
-      n = red;
-    }
-    indicatorC[a] = n ;
+  if (key == 'q') {
+    myPort.stop();
+    exit();
   } 
-  else if (key == 'q') {
-    myPort.stop(); //Close serial port
-    exit(); //Exit program
-  }
+  //TODO: 1 - 8 (numpad and row) should flip relevant addresses in serialCommand
 }
 
 void serialEvent(Serial myPort) { 
-  String incoming;
-
-  incoming = myPort.readStringUntil('\n');
+  serialStatus = myPort.readStringUntil('\n');
   print("Current status: ");
-  println(incoming);
-
-  //TODO: Split incoming into serialStatus
-  serialStatus = int(split(incoming, ' '));
+  println(serialStatus);
   statusUpdate = true;
 }
 
